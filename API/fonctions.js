@@ -1,80 +1,85 @@
-// fonctions.js
 module.exports = (app, models) => {
-  const { User, Game, Trophy, UserTrophy } = models;
+  const {
+    Utilisateur,
+    Jeu,
+    Trophee,
+    JeuxUtilisateur,
+    LiaisonSteam,
+    ProgressionUtilisateur,
+  } = models;
 
-  // ======================================
-  // Endpoints pour les Users
-  // ======================================
-  
-  app.get('/users', async (req, res) => {
+  // ================================
+  // Endpoints pour Utilisateurs
+  // ================================
+  app.get('/utilisateurs', async (req, res) => {
     try {
-      const users = await User.findAll({ include: Trophy });
-      res.json(users);
+      const utilisateurs = await Utilisateur.findAll();
+      res.json(utilisateurs);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la récupération des utilisateurs.' });
+      res.status(500).json({ error: "Erreur lors de la récupération des utilisateurs." });
     }
   });
 
-  app.post('/users', async (req, res) => {
+  app.post('/utilisateurs', async (req, res) => {
     try {
-      const { username, email, password, steam_id } = req.body;
-      const newUser = await User.create({ username, email, password, steam_id });
-      res.status(201).json(newUser);
+      const { username, email, password } = req.body;
+      const newUtilisateur = await Utilisateur.create({ username, email, password });
+      res.status(201).json(newUtilisateur);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la création de l’utilisateur.' });
+      res.status(500).json({ error: "Erreur lors de la création de l'utilisateur." });
     }
   });
 
-  app.put('/users/:id', async (req, res) => {
+  app.put('/utilisateurs/:id', async (req, res) => {
     try {
       const id = req.params.id;
-      const [updated] = await User.update(req.body, { where: { id } });
+      const [updated] = await Utilisateur.update(req.body, { where: { id } });
       if (updated) {
-        const updatedUser = await User.findByPk(id);
-        res.status(200).json(updatedUser);
+        const updatedUtilisateur = await Utilisateur.findByPk(id);
+        res.status(200).json(updatedUtilisateur);
       } else {
-        res.status(404).json({ error: 'Utilisateur non trouvé' });
+        res.status(404).json({ error: "Utilisateur non trouvé" });
       }
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la mise à jour de l’utilisateur.' });
+      res.status(500).json({ error: "Erreur lors de la mise à jour de l'utilisateur." });
     }
   });
 
-  app.patch('/users/:id', async (req, res) => {
+  app.patch('/utilisateurs/:id', async (req, res) => {
     try {
       const id = req.params.id;
-      const [updated] = await User.update(req.body, { where: { id } });
+      const [updated] = await Utilisateur.update(req.body, { where: { id } });
       if (updated) {
-        const updatedUser = await User.findByPk(id);
-        res.status(200).json(updatedUser);
+        const updatedUtilisateur = await Utilisateur.findByPk(id);
+        res.status(200).json(updatedUtilisateur);
       } else {
-        res.status(404).json({ error: 'Utilisateur non trouvé' });
+        res.status(404).json({ error: "Utilisateur non trouvé" });
       }
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la mise à jour partielle de l’utilisateur.' });
+      res.status(500).json({ error: "Erreur lors de la mise à jour partielle de l'utilisateur." });
     }
   });
 
-  app.delete('/users/:id', async (req, res) => {
+  app.delete('/utilisateurs/:id', async (req, res) => {
     try {
       const id = req.params.id;
-      const deleted = await User.destroy({ where: { id } });
+      const deleted = await Utilisateur.destroy({ where: { id } });
       if (deleted) {
         res.status(204).send();
       } else {
-        res.status(404).json({ error: 'Utilisateur non trouvé' });
+        res.status(404).json({ error: "Utilisateur non trouvé" });
       }
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la suppression de l’utilisateur.' });
+      res.status(500).json({ error: "Erreur lors de la suppression de l'utilisateur." });
     }
   });
 
-  app.head('/users', async (req, res) => {
+  app.head('/utilisateurs', async (req, res) => {
     try {
       res.status(200).end();
     } catch (err) {
@@ -83,84 +88,83 @@ module.exports = (app, models) => {
     }
   });
 
-  app.options('/users', (req, res) => {
+  app.options('/utilisateurs', (req, res) => {
     res.set('Allow', 'GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS');
     res.status(200).end();
   });
 
-  // ======================================
-  // Endpoints pour les Games
-  // ======================================
-
-  app.get('/games', async (req, res) => {
+  // ================================
+  // Endpoints pour Jeux
+  // ================================
+  app.get('/jeux', async (req, res) => {
     try {
-      const games = await Game.findAll();
-      res.json(games);
+      const jeux = await Jeu.findAll();
+      res.json(jeux);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la récupération des jeux.' });
+      res.status(500).json({ error: "Erreur lors de la récupération des jeux." });
     }
   });
 
-  app.post('/games', async (req, res) => {
+  app.post('/jeux', async (req, res) => {
     try {
-      const { name } = req.body;
-      const newGame = await Game.create({ name });
-      res.status(201).json(newGame);
+      const { nom } = req.body;
+      const newJeu = await Jeu.create({ nom });
+      res.status(201).json(newJeu);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la création du jeu.' });
+      res.status(500).json({ error: "Erreur lors de la création du jeu." });
     }
   });
 
-  app.put('/games/:id', async (req, res) => {
+  app.put('/jeux/:id', async (req, res) => {
     try {
       const id = req.params.id;
-      const [updated] = await Game.update(req.body, { where: { id } });
+      const [updated] = await Jeu.update(req.body, { where: { id } });
       if (updated) {
-        const updatedGame = await Game.findByPk(id);
-        res.status(200).json(updatedGame);
+        const updatedJeu = await Jeu.findByPk(id);
+        res.status(200).json(updatedJeu);
       } else {
-        res.status(404).json({ error: 'Jeu non trouvé' });
+        res.status(404).json({ error: "Jeu non trouvé" });
       }
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la mise à jour du jeu.' });
+      res.status(500).json({ error: "Erreur lors de la mise à jour du jeu." });
     }
   });
 
-  app.patch('/games/:id', async (req, res) => {
+  app.patch('/jeux/:id', async (req, res) => {
     try {
       const id = req.params.id;
-      const [updated] = await Game.update(req.body, { where: { id } });
+      const [updated] = await Jeu.update(req.body, { where: { id } });
       if (updated) {
-        const updatedGame = await Game.findByPk(id);
-        res.status(200).json(updatedGame);
+        const updatedJeu = await Jeu.findByPk(id);
+        res.status(200).json(updatedJeu);
       } else {
-        res.status(404).json({ error: 'Jeu non trouvé' });
+        res.status(404).json({ error: "Jeu non trouvé" });
       }
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la mise à jour partielle du jeu.' });
+      res.status(500).json({ error: "Erreur lors de la mise à jour partielle du jeu." });
     }
   });
 
-  app.delete('/games/:id', async (req, res) => {
+  app.delete('/jeux/:id', async (req, res) => {
     try {
       const id = req.params.id;
-      const deleted = await Game.destroy({ where: { id } });
+      const deleted = await Jeu.destroy({ where: { id } });
       if (deleted) {
         res.status(204).send();
       } else {
-        res.status(404).json({ error: 'Jeu non trouvé' });
+        res.status(404).json({ error: "Jeu non trouvé" });
       }
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la suppression du jeu.' });
+      res.status(500).json({ error: "Erreur lors de la suppression du jeu." });
     }
   });
 
-  app.head('/games', async (req, res) => {
+  app.head('/jeux', async (req, res) => {
     try {
       res.status(200).end();
     } catch (err) {
@@ -169,80 +173,79 @@ module.exports = (app, models) => {
     }
   });
 
-  app.options('/games', (req, res) => {
+  app.options('/jeux', (req, res) => {
     res.set('Allow', 'GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS');
     res.status(200).end();
   });
 
-  // ======================================
-  // Endpoints pour les Trophies (maintenant "trophees")
-  // ======================================
-
+  // ================================
+  // Endpoints pour Trophees
+  // ================================
   app.get('/trophees', async (req, res) => {
     try {
-      const trophees = await Trophy.findAll();
+      const trophees = await Trophee.findAll();
       res.json(trophees);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la récupération des trophées.' });
+      res.status(500).json({ error: "Erreur lors de la récupération des trophées." });
     }
   });
 
   app.post('/trophees', async (req, res) => {
     try {
-      const { name, game_id } = req.body;
-      const newTrophy = await Trophy.create({ name, game_id });
-      res.status(201).json(newTrophy);
+      const { nom, jeu_id } = req.body;
+      const newTrophee = await Trophee.create({ nom, jeu_id });
+      res.status(201).json(newTrophee);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la création du trophée.' });
+      res.status(500).json({ error: "Erreur lors de la création du trophée." });
     }
   });
 
   app.put('/trophees/:id', async (req, res) => {
     try {
       const id = req.params.id;
-      const [updated] = await Trophy.update(req.body, { where: { id } });
+      const [updated] = await Trophee.update(req.body, { where: { id } });
       if (updated) {
-        const updatedTrophy = await Trophy.findByPk(id);
-        res.status(200).json(updatedTrophy);
+        const updatedTrophee = await Trophee.findByPk(id);
+        res.status(200).json(updatedTrophee);
       } else {
-        res.status(404).json({ error: 'Trophée non trouvé' });
+        res.status(404).json({ error: "Trophée non trouvé" });
       }
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la mise à jour du trophée.' });
+      res.status(500).json({ error: "Erreur lors de la mise à jour du trophée." });
     }
   });
 
   app.patch('/trophees/:id', async (req, res) => {
     try {
       const id = req.params.id;
-      const [updated] = await Trophy.update(req.body, { where: { id } });
+      const [updated] = await Trophee.update(req.body, { where: { id } });
       if (updated) {
-        const updatedTrophy = await Trophy.findByPk(id);
-        res.status(200).json(updatedTrophy);
+        const updatedTrophee = await Trophee.findByPk(id);
+        res.status(200).json(updatedTrophee);
       } else {
-        res.status(404).json({ error: 'Trophée non trouvé' });
+        res.status(404).json({ error: "Trophée non trouvé" });
       }
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la mise à jour partielle du trophée.' });
+      res.status(500).json({ error: "Erreur lors de la mise à jour partielle du trophée." });
     }
   });
 
   app.delete('/trophees/:id', async (req, res) => {
     try {
       const id = req.params.id;
-      const deleted = await Trophy.destroy({ where: { id } });
+      const deleted = await Trophee.destroy({ where: { id } });
       if (deleted) {
         res.status(204).send();
       } else {
-        res.status(404).json({ error: 'Trophée non trouvé' });
+        res.status(404).json({ error: "Trophée non trouvé" });
       }
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la suppression du trophée.' });
+      res.status(500).json({ error: "Erreur lors de la suppression du trophée." });
     }
   });
 
@@ -260,79 +263,78 @@ module.exports = (app, models) => {
     res.status(200).end();
   });
 
-  // ======================================
-  // Endpoints pour la table de liaison UserTrophy (maintenant "user_trophees")
-  // ======================================
-
-  app.get('/user-trophees', async (req, res) => {
+  // ================================
+  // Endpoints pour JeuxUtilisateur
+  // ================================
+  app.get('/jeux-utilisateur', async (req, res) => {
     try {
-      const userTrophees = await UserTrophy.findAll();
-      res.json(userTrophees);
+      const relations = await JeuxUtilisateur.findAll();
+      res.json(relations);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la récupération des relations user-trophees.' });
+      res.status(500).json({ error: "Erreur lors de la récupération des relations jeux-utilisateur." });
     }
   });
 
-  app.post('/user-trophees', async (req, res) => {
+  app.post('/jeux-utilisateur', async (req, res) => {
     try {
-      const { user_id, trophee_id, obtained_date } = req.body;
-      const newRelation = await UserTrophy.create({ user_id, trophee_id, obtained_date });
+      const { utilisateur_id, jeu_id } = req.body;
+      const newRelation = await JeuxUtilisateur.create({ utilisateur_id, jeu_id });
       res.status(201).json(newRelation);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la création de la relation user-trophees.' });
+      res.status(500).json({ error: "Erreur lors de la création de la relation jeux-utilisateur." });
     }
   });
 
-  app.put('/user-trophees/:user_id/:trophee_id', async (req, res) => {
+  app.put('/jeux-utilisateur/:utilisateur_id/:jeu_id', async (req, res) => {
     try {
-      const { user_id, trophee_id } = req.params;
-      const [updated] = await UserTrophy.update(req.body, { where: { user_id, trophee_id } });
+      const { utilisateur_id, jeu_id } = req.params;
+      const [updated] = await JeuxUtilisateur.update(req.body, { where: { utilisateur_id, jeu_id } });
       if (updated) {
-        const updatedRelation = await UserTrophy.findOne({ where: { user_id, trophee_id } });
+        const updatedRelation = await JeuxUtilisateur.findOne({ where: { utilisateur_id, jeu_id } });
         res.status(200).json(updatedRelation);
       } else {
-        res.status(404).json({ error: 'Relation user-trophees non trouvée' });
+        res.status(404).json({ error: "Relation jeux-utilisateur non trouvée" });
       }
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la mise à jour de la relation user-trophees.' });
+      res.status(500).json({ error: "Erreur lors de la mise à jour de la relation jeux-utilisateur." });
     }
   });
 
-  app.patch('/user-trophees/:user_id/:trophee_id', async (req, res) => {
+  app.patch('/jeux-utilisateur/:utilisateur_id/:jeu_id', async (req, res) => {
     try {
-      const { user_id, trophee_id } = req.params;
-      const [updated] = await UserTrophy.update(req.body, { where: { user_id, trophee_id } });
+      const { utilisateur_id, jeu_id } = req.params;
+      const [updated] = await JeuxUtilisateur.update(req.body, { where: { utilisateur_id, jeu_id } });
       if (updated) {
-        const updatedRelation = await UserTrophy.findOne({ where: { user_id, trophee_id } });
+        const updatedRelation = await JeuxUtilisateur.findOne({ where: { utilisateur_id, jeu_id } });
         res.status(200).json(updatedRelation);
       } else {
-        res.status(404).json({ error: 'Relation user-trophees non trouvée' });
+        res.status(404).json({ error: "Relation jeux-utilisateur non trouvée" });
       }
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la mise à jour partielle de la relation user-trophees.' });
+      res.status(500).json({ error: "Erreur lors de la mise à jour partielle de la relation jeux-utilisateur." });
     }
   });
 
-  app.delete('/user-trophees/:user_id/:trophee_id', async (req, res) => {
+  app.delete('/jeux-utilisateur/:utilisateur_id/:jeu_id', async (req, res) => {
     try {
-      const { user_id, trophee_id } = req.params;
-      const deleted = await UserTrophy.destroy({ where: { user_id, trophee_id } });
+      const { utilisateur_id, jeu_id } = req.params;
+      const deleted = await JeuxUtilisateur.destroy({ where: { utilisateur_id, jeu_id } });
       if (deleted) {
         res.status(204).send();
       } else {
-        res.status(404).json({ error: 'Relation user-trophees non trouvée' });
+        res.status(404).json({ error: "Relation jeux-utilisateur non trouvée" });
       }
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Erreur lors de la suppression de la relation user-trophees.' });
+      res.status(500).json({ error: "Erreur lors de la suppression de la relation jeux-utilisateur." });
     }
   });
 
-  app.head('/user-trophees', async (req, res) => {
+  app.head('/jeux-utilisateur', async (req, res) => {
     try {
       res.status(200).end();
     } catch (err) {
@@ -341,7 +343,177 @@ module.exports = (app, models) => {
     }
   });
 
-  app.options('/user-trophees', (req, res) => {
+  app.options('/jeux-utilisateur', (req, res) => {
+    res.set('Allow', 'GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS');
+    res.status(200).end();
+  });
+
+  // ================================
+  // Endpoints pour LiaisonSteam
+  // ================================
+  app.get('/liaison-steam', async (req, res) => {
+    try {
+      const liaisons = await LiaisonSteam.findAll();
+      res.json(liaisons);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erreur lors de la récupération des liaisons Steam." });
+    }
+  });
+
+  app.post('/liaison-steam', async (req, res) => {
+    try {
+      const { utilisateur_id, steam_id } = req.body;
+      const newLiaison = await LiaisonSteam.create({ utilisateur_id, steam_id });
+      res.status(201).json(newLiaison);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erreur lors de la création de la liaison Steam." });
+    }
+  });
+
+  app.put('/liaison-steam/:id', async (req, res) => {
+    try {
+      const id = req.params.id;
+      const [updated] = await LiaisonSteam.update(req.body, { where: { id } });
+      if (updated) {
+        const updatedLiaison = await LiaisonSteam.findByPk(id);
+        res.status(200).json(updatedLiaison);
+      } else {
+        res.status(404).json({ error: "Liaison Steam non trouvée" });
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erreur lors de la mise à jour de la liaison Steam." });
+    }
+  });
+
+  app.patch('/liaison-steam/:id', async (req, res) => {
+    try {
+      const id = req.params.id;
+      const [updated] = await LiaisonSteam.update(req.body, { where: { id } });
+      if (updated) {
+        const updatedLiaison = await LiaisonSteam.findByPk(id);
+        res.status(200).json(updatedLiaison);
+      } else {
+        res.status(404).json({ error: "Liaison Steam non trouvée" });
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erreur lors de la mise à jour partielle de la liaison Steam." });
+    }
+  });
+
+  app.delete('/liaison-steam/:id', async (req, res) => {
+    try {
+      const id = req.params.id;
+      const deleted = await LiaisonSteam.destroy({ where: { id } });
+      if (deleted) {
+        res.status(204).send();
+      } else {
+        res.status(404).json({ error: "Liaison Steam non trouvée" });
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erreur lors de la suppression de la liaison Steam." });
+    }
+  });
+
+  app.head('/liaison-steam', async (req, res) => {
+    try {
+      res.status(200).end();
+    } catch (err) {
+      console.error(err);
+      res.status(500).end();
+    }
+  });
+
+  app.options('/liaison-steam', (req, res) => {
+    res.set('Allow', 'GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS');
+    res.status(200).end();
+  });
+
+  // ================================
+  // Endpoints pour ProgressionUtilisateur
+  // ================================
+  app.get('/progression-utilisateur', async (req, res) => {
+    try {
+      const progressions = await ProgressionUtilisateur.findAll();
+      res.json(progressions);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erreur lors de la récupération des progressions utilisateur." });
+    }
+  });
+
+  app.post('/progression-utilisateur', async (req, res) => {
+    try {
+      const { utilisateur_id, jeu_id, progression, derniere_mise_a_jour } = req.body;
+      const newProgression = await ProgressionUtilisateur.create({ utilisateur_id, jeu_id, progression, derniere_mise_a_jour });
+      res.status(201).json(newProgression);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erreur lors de la création de la progression utilisateur." });
+    }
+  });
+
+  app.put('/progression-utilisateur/:utilisateur_id/:jeu_id', async (req, res) => {
+    try {
+      const { utilisateur_id, jeu_id } = req.params;
+      const [updated] = await ProgressionUtilisateur.update(req.body, { where: { utilisateur_id, jeu_id } });
+      if (updated) {
+        const updatedProgression = await ProgressionUtilisateur.findOne({ where: { utilisateur_id, jeu_id } });
+        res.status(200).json(updatedProgression);
+      } else {
+        res.status(404).json({ error: "Progression non trouvée" });
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erreur lors de la mise à jour de la progression utilisateur." });
+    }
+  });
+
+  app.patch('/progression-utilisateur/:utilisateur_id/:jeu_id', async (req, res) => {
+    try {
+      const { utilisateur_id, jeu_id } = req.params;
+      const [updated] = await ProgressionUtilisateur.update(req.body, { where: { utilisateur_id, jeu_id } });
+      if (updated) {
+        const updatedProgression = await ProgressionUtilisateur.findOne({ where: { utilisateur_id, jeu_id } });
+        res.status(200).json(updatedProgression);
+      } else {
+        res.status(404).json({ error: "Progression non trouvée" });
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erreur lors de la mise à jour partielle de la progression utilisateur." });
+    }
+  });
+
+  app.delete('/progression-utilisateur/:utilisateur_id/:jeu_id', async (req, res) => {
+    try {
+      const { utilisateur_id, jeu_id } = req.params;
+      const deleted = await ProgressionUtilisateur.destroy({ where: { utilisateur_id, jeu_id } });
+      if (deleted) {
+        res.status(204).send();
+      } else {
+        res.status(404).json({ error: "Progression non trouvée" });
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erreur lors de la suppression de la progression utilisateur." });
+    }
+  });
+
+  app.head('/progression-utilisateur', async (req, res) => {
+    try {
+      res.status(200).end();
+    } catch (err) {
+      console.error(err);
+      res.status(500).end();
+    }
+  });
+
+  app.options('/progression-utilisateur', (req, res) => {
     res.set('Allow', 'GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS');
     res.status(200).end();
   });
