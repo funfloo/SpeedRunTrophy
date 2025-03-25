@@ -1,4 +1,3 @@
-// apps.js
 const express = require('express');
 const sequelize = require('./connection');
 const { DataTypes } = require('sequelize');
@@ -6,110 +5,194 @@ const { DataTypes } = require('sequelize');
 const app = express();
 app.use(express.json());
 
-// Définition du modèle User (table 'users')
-const User = sequelize.define('User', {
-  id: { 
-    type: DataTypes.INTEGER, 
-    primaryKey: true, 
-    autoIncrement: true 
+// Modèle Utilisateur (table 'utilisateurs')
+const Utilisateur = sequelize.define('Utilisateur', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
   },
-  username: { 
-    type: DataTypes.STRING(50), 
-    allowNull: false, 
-    unique: true 
+  username: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    unique: true,
   },
-  email: { 
-    type: DataTypes.STRING(100), 
-    allowNull: false, 
-    unique: true 
+  email: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    unique: true,
   },
-  password: { 
-    type: DataTypes.STRING(255), 
-    allowNull: false 
-  },
-  steam_id: { 
-    type: DataTypes.STRING(50), 
-    allowNull: true, 
-    unique: true 
+  password: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
   },
 }, {
-  tableName: 'users',
+  tableName: 'utilisateurs',
   timestamps: false,
 });
 
-// Définition du modèle Game (table 'games')
-const Game = sequelize.define('Game', {
-  id: { 
-    type: DataTypes.INTEGER, 
-    primaryKey: true, 
-    autoIncrement: true 
+// Modèle Jeu (table 'jeux')
+const Jeu = sequelize.define('Jeu', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
   },
-  name: { 
-    type: DataTypes.STRING(100), 
-    allowNull: false 
+  nom: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
   },
 }, {
-  tableName: 'games',
+  tableName: 'jeux',
   timestamps: false,
 });
 
-// Définition du modèle Trophy (table 'trophees')
-const Trophy = sequelize.define('Trophy', {
-  id: { 
-    type: DataTypes.INTEGER, 
-    primaryKey: true, 
-    autoIncrement: true 
+// Modèle Trophee (table 'trophees')
+const Trophee = sequelize.define('Trophee', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
   },
-  name: { 
-    type: DataTypes.STRING(100), 
-    allowNull: false 
+  nom: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
   },
-  game_id: { 
-    type: DataTypes.INTEGER, 
-    allowNull: false 
+  jeu_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
   },
 }, {
   tableName: 'trophees',
   timestamps: false,
 });
 
-// Définition du modèle UserTrophy (table 'user_trophees')
-const UserTrophy = sequelize.define('UserTrophy', {
-  user_id: { 
-    type: DataTypes.INTEGER, 
-    primaryKey: true, 
-    allowNull: false 
+// Modèle JeuxUtilisateur (table 'jeux_utilisateur') - relation many-to-many entre utilisateurs et jeux
+const JeuxUtilisateur = sequelize.define('JeuxUtilisateur', {
+  utilisateur_id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    allowNull: false,
   },
-  trophee_id: { 
-    type: DataTypes.INTEGER, 
-    primaryKey: true, 
-    allowNull: false 
+  jeu_id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    allowNull: false,
   },
-  obtained_date: { 
-    type: DataTypes.DATE, 
-    allowNull: true 
-  },
+  // Vous pouvez ajouter d'autres colonnes (ex. date d'inscription) si nécessaire
 }, {
-  tableName: 'user_trophees',
+  tableName: 'jeux_utilisateur',
   timestamps: false,
 });
 
-// Associations Many-to-Many entre User et Trophy via UserTrophy
-User.belongsToMany(Trophy, { 
-  through: UserTrophy, 
-  foreignKey: 'user_id', 
-  otherKey: 'trophee_id'
-});
-Trophy.belongsToMany(User, { 
-  through: UserTrophy, 
-  foreignKey: 'trophee_id', 
-  otherKey: 'user_id'
+// Modèle LiaisonSteam (table 'liaison_steam') - associe un utilisateur à son compte Steam
+const LiaisonSteam = sequelize.define('LiaisonSteam', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  utilisateur_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    unique: true,
+  },
+  steam_id: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    unique: true,
+  },
+}, {
+  tableName: 'liaison_steam',
+  timestamps: false,
 });
 
-// Regroupement des modèles dans un objet pour les transmettre aux fonctions
-const models = { User, Game, Trophy, UserTrophy };
+// Modèle ProgressionUtilisateur (table 'progression_utilisateur') - suit la progression d'un utilisateur dans un jeu
+const ProgressionUtilisateur = sequelize.define('ProgressionUtilisateur', {
+  utilisateur_id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    allowNull: false,
+  },
+  jeu_id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    allowNull: false,
+  },
+  progression: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
+  derniere_mise_a_jour: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+}, {
+  tableName: 'progression_utilisateur',
+  timestamps: false,
+});
 
-// Importation du module de fonctions qui ajoute tous les endpoints à notre app
+// Associations
+
+// Relation many-to-many entre Utilisateur et Jeu via JeuxUtilisateur
+Utilisateur.belongsToMany(Jeu, {
+  through: JeuxUtilisateur,
+  foreignKey: 'utilisateur_id',
+  otherKey: 'jeu_id',
+});
+Jeu.belongsToMany(Utilisateur, {
+  through: JeuxUtilisateur,
+  foreignKey: 'jeu_id',
+  otherKey: 'utilisateur_id',
+});
+
+// Relation entre Jeu et Trophee
+Trophee.belongsTo(Jeu, {
+  foreignKey: 'jeu_id',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+});
+Jeu.hasMany(Trophee, {
+  foreignKey: 'jeu_id',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+});
+
+// Relation one-to-one entre Utilisateur et LiaisonSteam
+Utilisateur.hasOne(LiaisonSteam, {
+  foreignKey: 'utilisateur_id',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+});
+LiaisonSteam.belongsTo(Utilisateur, {
+  foreignKey: 'utilisateur_id',
+});
+
+// Pour ProgressionUtilisateur, nous créons une association many-to-many avec attributs supplémentaires
+Utilisateur.belongsToMany(Jeu, {
+  through: ProgressionUtilisateur,
+  foreignKey: 'utilisateur_id',
+  otherKey: 'jeu_id',
+  as: 'progressions',
+});
+Jeu.belongsToMany(Utilisateur, {
+  through: ProgressionUtilisateur,
+  foreignKey: 'jeu_id',
+  otherKey: 'utilisateur_id',
+  as: 'progressions',
+});
+
+// Regroupement des modèles
+const models = {
+  Utilisateur,
+  Jeu,
+  Trophee,
+  JeuxUtilisateur,
+  LiaisonSteam,
+  ProgressionUtilisateur,
+};
+
+// Importation du module de fonctions qui va ajouter les endpoints
 require('./fonctions')(app, models);
 
 // Synchronisation avec la base de données puis démarrage du serveur
@@ -119,4 +202,6 @@ sequelize.sync()
       console.log('Serveur démarré sur le port 3000');
     });
   })
-  .catch(err => console.error('Erreur de synchronisation avec la base de données:', err));
+  .catch(err => console.error('Erreur de synchronisation:', err));
+
+module.exports = app;
