@@ -1,6 +1,6 @@
 <?php
 session_start();
-require 'config.php';
+require_once 'config.php';
 
 if (!isset($_SESSION['steam_id'])) {
     header("Location: connexion.php");
@@ -8,40 +8,48 @@ if (!isset($_SESSION['steam_id'])) {
 }
 
 $steamId = $_SESSION['steam_id'];
+
+// Connexion BDD
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+if ($conn->connect_error) {
+    die("Erreur de connexion : " . $conn->connect_error);
+}
 
-if ($conn->connect_error) die("❌ Erreur MySQL : " . $conn->connect_error);
-
-// 🔹 Récupérer les jeux du joueur
-$games = [];
-$sql = "SELECT j.nom 
-        FROM jeux j
-        JOIN jeux_utilisateur ju ON j.id = ju.id_jeu
-        JOIN utilisateurs u ON ju.id_utilisateur = u.id
-        WHERE u.steam_id = ?";
-$stmt = $conn->prepare($sql);
+// Récupérer l'utilisateur
+$stmt = $conn->prepare("SELECT id, nom_utilisateur FROM utilisateurs WHERE steam_id = ?");
 $stmt->bind_param("s", $steamId);
+$stmt->execute();
+$stmt->bind_result($userId, $username);
+$stmt->fetch();
+$stmt->close();
+
+// 🔹 JEUX du joueur
+$jeux = [];
+$sql = "SELECT j.nom FROM jeux j
+        JOIN progression_utilisateur p ON j.id = p.id_jeu
+        WHERE p.id_utilisateur = ?
+        GROUP BY j.id";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
 while ($row = $result->fetch_assoc()) {
-    $games[] = $row;
+    $jeux[] = $row['nom'];
 }
 $stmt->close();
 
-// 🔹 Récupérer les trophées du joueur
-$trophies = [];
-$sql = "SELECT t.nom, t.description, t.rarete, j.nom AS jeu
-        FROM progression_utilisateur p
-        JOIN trophees t ON p.id_trophee = t.id
-        JOIN jeux j ON t.steam_appid = j.steam_appid
-        JOIN utilisateurs u ON p.id_utilisateur = u.id
-        WHERE u.steam_id = ?";
+// 🔹 TROPHÉES obtenus
+$trophees = [];
+$sql = "SELECT t.nom, t.description
+        FROM progression_utilisateur pu
+        JOIN trophees t ON pu.id_trophee = t.id
+        WHERE pu.id_utilisateur = ?";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $steamId);
+$stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
 while ($row = $result->fetch_assoc()) {
-    $trophies[] = $row;
+    $trophees[] = $row;
 }
 $stmt->close();
 $conn->close();
@@ -51,30 +59,45 @@ $conn->close();
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Profil - Speedrun Trophée</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Mon Profil - Speedrun Trophée</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../backend/styles.css">
 </head>
 <body>
-    <?php include 'header.php'; ?>
-    
-    <main class="container">
-        <h2>👤 Mon Profil</h2>
-        <h3>🎮 Mes Jeux</h3>
-        <ul>
-            <?php foreach ($games as $game): ?>
-                <li><?= htmlspecialchars($game['nom']) ?></li>
-            <?php endforeach; ?>
-        </ul>
 
-        <h3>🏆 Mes Trophées</h3>
-        <ul>
-            <?php foreach ($trophies as $trophy): ?>
-                <li>
-                    <strong><?= htmlspecialchars($trophy['nom']) ?></strong> - <?= htmlspecialchars($trophy['jeu']) ?>
-                    <p><?= htmlspecialchars($trophy['description']) ?> (Rare: <?= $trophy['rarete'] ?>%)</p>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-    </main>
+<?php include 'header.php'; ?>
+
+<main class="container mt-4">
+    <section>
+        <h2>👤 Mon Profil</h2>
+
+        <h4>🎮 Mes Jeux</h4>
+        <?php if (!empty($jeux)): ?>
+            <ul>
+                <?php foreach ($jeux as $jeu): ?>
+                    <li><?= htmlspecialchars($jeu) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        <?php else: ?>
+            <p>Aucun jeu détecté. Lance la synchronisation Steam.</p>
+        <?php endif; ?>
+
+        <h4 class="mt-4">🏆 Mes Trophées</h4>
+        <?php if (!empty($trophees)): ?>
+            <ul>
+                <?php foreach ($trophees as $t): ?>
+                    <li><strong><?= htmlspecialchars($t['nom']) ?>:</strong> <?= htmlspecialchars($t['description']) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        <?php else: ?>
+            <p>Pas encore de trophées débloqués.</p>
+        <?php endif; ?>
+    </section>
+</main>
+
+<footer class="bg-dark text-white text-center py-3">
+    <p>&copy; 2025 Speedrun Trophée - Tous droits réservés</p>
+</footer>
+
 </body>
 </html>

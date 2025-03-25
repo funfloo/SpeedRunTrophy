@@ -1,168 +1,129 @@
 const axios = require('axios');
 const mysql = require('mysql2/promise');
 
-// 🔹 Configuration de la base de données MySQL
+// 🔹 Configuration MySQL
 const DB_CONFIG = {
     host: 'localhost',
-    user: 'root',  
-    password: '',  
+    user: 'root',
+    password: '',
     database: 'speedrun_trophees'
 };
 
-// 🔹 Clé API Steam (remplace par la tienne)
+// 🔹 Clé API Steam
 const API_KEY = "9B79456AE2422A57C047F6FAD331C21B";
+const STEAM_ID = "76561198259394691";
 
-// 🔹 ID Steam de l'utilisateur à synchroniser (remplace par un vrai ID)
-const STEAM_ID = "76561198159440219";
-
-/**
- * 🔹 Récupère le nom d'utilisateur Steam
- */
+// 🔹 Récupère le nom Steam
 async function fetchSteamUsername(steamId) {
-    try {
-        const url = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${API_KEY}&steamids=${steamId}`;
-        const { data } = await axios.get(url);
-        return data.response.players.length ? data.response.players[0].personaname : null;
-    } catch (error) {
-        console.error(`❌ Erreur récupération nom utilisateur Steam : ${error.message}`);
-        return null;
-    }
+    const url = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${API_KEY}&steamids=${steamId}`;
+    const { data } = await axios.get(url);
+    return data.response.players[0]?.personaname || null;
 }
 
-/**
- * 🔹 Vérifie si l'utilisateur existe en base, sinon l'ajoute
- */
+// 🔹 Crée ou récupère l'utilisateur
 async function getOrCreateUser(db, steamId) {
     const [rows] = await db.query("SELECT id FROM utilisateurs WHERE steam_id = ?", [steamId]);
-    
     if (rows.length) return rows[0].id;
 
     const username = await fetchSteamUsername(steamId);
     if (!username) return null;
 
     const [result] = await db.query(
-        `INSERT INTO utilisateurs (nom_utilisateur, email, mot_de_passe, steam_id)
-         VALUES (?, ?, ?, ?)`,
-        [username, `${steamId}@steam.com`, '', steamId]
+        "INSERT INTO utilisateurs (nom_utilisateur, email, mot_de_passe, steam_id) VALUES (?, ?, '', ?)",
+        [username, `${steamId}@steam.com`, steamId]
     );
-
+    console.log(`👤 Utilisateur ajouté : ${username}`);
     return result.insertId;
 }
 
-/**
- * 🔹 Récupère la liste des jeux possédés par l'utilisateur Steam
- */
+// 🔹 Récupère les jeux Steam
 async function fetchGames(steamId) {
+    const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${API_KEY}&steamid=${steamId}&include_appinfo=true`;
+    const { data } = await axios.get(url);
+    return data.response.games || [];
+}
+
+// 🔹 Récupère les succès d'un jeu
+async function fetchAchievements(steamId, appid) {
     try {
-        const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${API_KEY}&steamid=${steamId}&include_appinfo=true`;
+        const url = `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key=${API_KEY}&steamid=${steamId}&appid=${appid}`;
         const { data } = await axios.get(url);
-        return data.response.games || []; 
-    } catch (error) {
-        console.error(`❌ Erreur récupération jeux Steam : ${error.message}`);
-        return []; 
+        return data.playerstats?.achievements || [];
+    } catch (err) {
+        console.warn(`⚠️ Aucun succès récupéré pour appid ${appid}`);
+        return [];
     }
 }
 
-/**
- * 🔹 Récupère les succès (trophées) Steam d'un utilisateur pour un jeu donné
- */
-async function fetchAchievements(steamId, gameId) {
-    try {
-        const url = `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key=${API_KEY}&steamid=${steamId}&appid=${gameId}`;
-        const { data } = await axios.get(url);
-
-        if (!data.playerstats || !data.playerstats.achievements) {
-            console.warn(`⚠️ Aucun succès trouvé pour le jeu ${gameId}`);
-            return [];
-        }
-
-        return data.playerstats.achievements;
-    } catch (error) {
-        console.error(`❌ Erreur récupération succès du jeu ${gameId}: ${error.message}`);
-        return []; 
-    }
-}
-
-/**
- * 🔹 Synchronise les jeux et trophées Steam d'un utilisateur
- */
+// 🔹 Script principal
 async function syncSteamData(steamId) {
     const db = await mysql.createConnection(DB_CONFIG);
+    console.log(`🔄 Synchronisation Steam pour ${steamId}`);
 
-    console.log(`🔄 Début synchronisation Steam pour ${steamId}...`);
-
-    // 🔹 Vérifier si l'utilisateur existe, sinon le créer
     const userId = await getOrCreateUser(db, steamId);
     if (!userId) {
-        console.error(`❌ Impossible de synchroniser les données pour Steam ID ${steamId}`);
-        await db.end();
+        console.error("❌ Utilisateur introuvable.");
         return;
     }
 
-    // 🔹 Récupérer les jeux du joueur
     const games = await fetchGames(steamId);
-    if (games.length === 0) {
-        console.warn("⚠️ Aucun jeu trouvé pour cet utilisateur.");
-        await db.end();
+    if (!games.length) {
+        console.warn("⚠️ Aucun jeu trouvé.");
         return;
     }
 
     for (const game of games) {
-        console.log(`🎮 Ajout du jeu : ${game.name}`);
+        console.log(`🎮 Jeu détecté : ${game.name}`);
 
-        // 🔹 Ajout du jeu dans la base de données
+        // ➤ Ajout du jeu
         await db.query(
-            `INSERT INTO jeux (steam_appid, nom) VALUES (?, ?)
-             ON DUPLICATE KEY UPDATE nom = VALUES(nom)`,
+            "INSERT INTO jeux (steam_appid, nom) VALUES (?, ?) ON DUPLICATE KEY UPDATE nom = VALUES(nom)",
             [game.appid, game.name]
         );
 
-        // 🔹 Associer le jeu à l'utilisateur
-        await db.query(
-            `INSERT INTO jeux_utilisateur (id_utilisateur, id_jeu) 
-             SELECT ?, id FROM jeux WHERE steam_appid = ? 
-             ON DUPLICATE KEY UPDATE id_utilisateur = VALUES(id_utilisateur)`,
-            [userId, game.appid]
-        );
+        // ➤ Récupère l'id interne du jeu
+        const [jeuRow] = await db.query("SELECT id FROM jeux WHERE steam_appid = ?", [game.appid]);
+        if (!jeuRow.length) continue;
+        const gameId = jeuRow[0].id;
 
-        // 🔹 Récupérer les trophées pour ce jeu
+        // ➤ Récupère les succès Steam
         const achievements = await fetchAchievements(steamId, game.appid);
-        if (achievements.length === 0) continue;
+        if (!achievements.length) continue;
 
         for (const ach of achievements) {
-            if (ach.achieved) {
-                console.log(`🏆 Succès débloqué : ${ach.apiname}`);
+            if (!ach.achieved) continue;
 
-                // 🔹 Insérer le trophée dans la base
-                await db.query(
-                    `INSERT INTO trophees (steam_appid, api_name, nom, description, rarete)
-                     VALUES (?, ?, ?, ?, NULL)
-                     ON DUPLICATE KEY UPDATE nom = VALUES(nom), description = VALUES(description)`,
-                    [game.appid, ach.apiname, ach.apiname, ach.description || ""]
-                );
+            // ➤ Ajout du trophée
+            await db.query(
+                `INSERT INTO trophees (id_jeu, api_name, nom, description, rarete)
+                 VALUES (?, ?, ?, ?, NULL)
+                 ON DUPLICATE KEY UPDATE nom = VALUES(nom), description = VALUES(description)`,
+                [gameId, ach.apiname, ach.apiname, ach.description || ""]
+            );
 
-                // 🔹 Récupérer l'ID du trophée
-                const [trophyRow] = await db.query(
-                    "SELECT id FROM trophees WHERE api_name = ? AND steam_appid = ?",
-                    [ach.apiname, game.appid]
-                );
-                if (!trophyRow.length) continue;
-                const trophyId = trophyRow[0].id;
+            // ➤ Récupère l'id du trophée
+            const [trophyRow] = await db.query(
+                "SELECT id FROM trophees WHERE api_name = ? AND id_jeu = ?",
+                [ach.apiname, gameId]
+            );
 
-                // 🔹 Ajouter la progression utilisateur
-                await db.query(
-                    `INSERT INTO progression_utilisateur (id_utilisateur, id_trophee, date_obtention)
-                    VALUES (?, ?, NOW())
-                    ON DUPLICATE KEY UPDATE date_obtention = NOW()`,
-                    [userId, trophyId]
-                );
-            }
+            if (!trophyRow.length) continue;
+            const trophyId = trophyRow[0].id;
+
+            // ➤ Ajout de la progression utilisateur
+            await db.query(
+                `INSERT INTO progression_utilisateur (id_utilisateur, id_trophee, id_jeu, date_obtention)
+                 VALUES (?, ?, ?, NOW())
+                 ON DUPLICATE KEY UPDATE date_obtention = NOW()`,
+                [userId, trophyId, gameId]
+            );
+
+            console.log(`🏆 Trophée débloqué : ${ach.apiname}`);
         }
     }
 
-    console.log("✅ Synchronisation Steam terminée !");
     await db.end();
+    console.log("✅ Synchronisation terminée !");
 }
 
-// 🏁 Lancer la synchronisation pour un utilisateur spécifique
 syncSteamData(STEAM_ID);

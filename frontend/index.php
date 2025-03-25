@@ -6,14 +6,12 @@ $connecte = isset($_SESSION['steam_id']);
 
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accueil - Speedrun Trophée</title>
-    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../backend/styles.css">
     <style>
         .carousel-item img {
             width: 100%;
@@ -32,7 +30,7 @@ $connecte = isset($_SESSION['steam_id']);
             <p>Relevez des défis, décrochez des trophées et rejoignez la compétition !</p>
         </section>
 
-        <!-- Slider de jeux populaires -->
+        <!-- 🎮 Slider -->
         <section class="mb-5">
             <div id="gameCarousel" class="carousel slide" data-ride="carousel">
                 <ol class="carousel-indicators">
@@ -43,21 +41,21 @@ $connecte = isset($_SESSION['steam_id']);
 
                 <div class="carousel-inner">
                     <div class="carousel-item active">
-                        <img src="elden_ring.jpg" alt="Elden Ring">
+                        <img src="../image/jeux/elden_ring.jpg" alt="Elden Ring">
                         <div class="carousel-caption d-none d-md-block">
                             <h5>Elden Ring</h5>
                             <p>Explorez un univers vaste rempli de défis et d'aventures épiques.</p>
                         </div>
                     </div>
                     <div class="carousel-item">
-                        <img src="miles_morales.jpg" alt="Miles Morales">
+                        <img src="../image/jeux/miles_morales.jpg" alt="Miles Morales">
                         <div class="carousel-caption d-none d-md-block">
                             <h5>Miles Morales</h5>
                             <p>Vivez l'aventure extraordinaire du nouveau Spider-Man.</p>
                         </div>
                     </div>
                     <div class="carousel-item">
-                        <img src="delta_force.jpg" alt="Delta Force">
+                        <img src="../image/jeux/delta_force.jpg" alt="Delta Force">
                         <div class="carousel-caption d-none d-md-block">
                             <h5>Delta Force</h5>
                             <p>Affrontez vos adversaires dans des combats intenses et stratégiques.</p>
@@ -76,24 +74,22 @@ $connecte = isset($_SESSION['steam_id']);
             </div>
         </section>
 
-        <!-- Message dynamique JavaScript -->
+        <!-- 🎁 Message dynamique -->
         <section class="text-center">
             <button class="btn btn-primary" onclick="welcomeMessage()">Clique pour un message surprise !</button>
             <p id="message" class="mt-3"></p>
         </section>
-
     </main>
 
     <footer class="bg-dark text-white text-center py-3">
         <p>&copy; 2025 Speedrun Trophée - Tous droits réservés</p>
     </footer>
 
-    <!-- Bootstrap JS, Popper.js, et jQuery -->
+    <!-- Scripts Bootstrap -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-    <!-- Fonction JavaScript personnalisée -->
     <script>
         function welcomeMessage() {
             const messages = [
@@ -105,7 +101,5 @@ $connecte = isset($_SESSION['steam_id']);
             document.getElementById('message').textContent = message;
         }
     </script>
-
 </body>
-
 </html>

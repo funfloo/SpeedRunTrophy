@@ -23,28 +23,36 @@ if (isset($_SESSION['steam_id'])) {
 ?>
 
 <header class="bg-dark text-white py-3">
-    <div class="container d-flex justify-content-between align-items-center">
-        <h1 class="m-0">Speedrun Trophées 🎮</h1>
-        <nav class="d-flex align-items-center">
-            <a href="index.php">🏠 Accueil</a>
-            <a href="missions.php">🎯 Missions</a>
-            <a href="leaderboard.php">🏆 Classement</a>
-            <a href="defis.php">🚩 Défis</a>
-            <?php if ($connecte): ?>
-                <a href="profile.php">👤 Profil</a>
-                <a href="roue.php">🎡 Roue</a>
-                <a href="recompenses.php">🎁 Récompenses</a>
-                <a href="logout.php">🚪 Déconnexion</a>
-            <?php else: ?>
-                <a href="connexion.php">🔑 Connexion</a>
-                <a href="inscription.php">📝 Inscription</a>
-            <?php endif; ?>
-        </nav>
+    <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
+        <!-- Logo + Titre -->
+        <div class="d-flex align-items-center mb-3 mb-md-0">
+            <span class="h3 mb-0 mr-2">🎮</span>
+            <h1 class="h4 mb-0">Speedrun Trophées</h1>
+        </div>
 
-        <?php if ($connecte): ?>
-            <div class="user-info text-white">
-                <span class="pseudo">👤 <?= htmlspecialchars($username) ?></span>
-            </div>
-        <?php endif; ?>
+        <!-- Navigation -->
+        <div class="d-flex flex-column flex-md-row align-items-center">
+            <nav class="d-flex flex-wrap align-items-center justify-content-center mb-2 mb-md-0">
+                <a href="index.php" class="nav-link text-primary">🏠 Accueil</a>
+                <a href="missions.php" class="nav-link text-primary">🎯 Missions</a>
+                <a href="leaderboard.php" class="nav-link text-primary">🏆 Classement</a>
+                <a href="defis.php" class="nav-link text-primary">🚩 Défis</a>
+
+                <?php if ($connecte): ?>
+                    <a href="profile.php" class="nav-link text-primary">👤 Profil</a>
+                    <a href="roue.php" class="nav-link text-primary">🎡 Roue</a>
+                    <a href="recompenses.php" class="nav-link text-primary">🎁 Récompenses</a>
+                    <a href="logout.php" class="nav-link text-warning">↩️ Déconnexion</a>
+                <?php else: ?>
+                    <a href="connexion.php" class="nav-link text-success">🔑 Connexion</a>
+                    <a href="inscription.php" class="nav-link text-success">📝 Inscription</a>
+                <?php endif; ?>
+            </nav>
+
+            <!-- Pseudo à droite -->
+            <?php if ($connecte): ?>
+                <div class="text-light font-weight-bold ml-md-3 mt-2 mt-md-0"><?= htmlspecialchars($username) ?></div>
+            <?php endif; ?>
+        </div>
     </div>
 </header>
