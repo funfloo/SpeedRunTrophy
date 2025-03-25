@@ -1,34 +1,31 @@
 <?php
 session_start();
-require_once 'config.php';
+require 'config.php';
 
 if (!isset($_SESSION['steam_id'])) {
     header("Location: connexion.php");
     exit();
 }
 
-$steamId = $_SESSION['steam_id'];
-
-// Connexion BDD
+// Connexion à la base de données
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-if ($conn->connect_error) {
-    die("Erreur de connexion : " . $conn->connect_error);
-}
 
-// Récupérer l'utilisateur
+// 🔍 Récupération des infos utilisateur
 $stmt = $conn->prepare("SELECT id, nom_utilisateur FROM utilisateurs WHERE steam_id = ?");
-$stmt->bind_param("s", $steamId);
+$stmt->bind_param("s", $_SESSION['steam_id']);
 $stmt->execute();
 $stmt->bind_result($userId, $username);
 $stmt->fetch();
 $stmt->close();
 
-// 🔹 TOUS les JEUX
+// 🔁 Jeux (10 aléatoires)
 $jeux = [];
-$sql = "SELECT DISTINCT j.nom FROM jeux j
-        JOIN progression_utilisateur p ON j.id = p.id_jeu
-        WHERE p.id_utilisateur = ?";
-$stmt = $conn->prepare($sql);
+$stmt = $conn->prepare("
+    SELECT DISTINCT j.nom FROM jeux j
+    JOIN progression_utilisateur p ON j.id = p.id_jeu
+    WHERE p.id_utilisateur = ?
+    ORDER BY RAND() LIMIT 10
+");
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -37,12 +34,14 @@ while ($row = $result->fetch_assoc()) {
 }
 $stmt->close();
 
-// 🔹 TOUS les TROPHÉES
+// 🏆 Trophées (20 aléatoires)
 $trophees = [];
-$sql = "SELECT t.nom, t.description FROM progression_utilisateur pu
-        JOIN trophees t ON pu.id_trophee = t.id
-        WHERE pu.id_utilisateur = ?";
-$stmt = $conn->prepare($sql);
+$stmt = $conn->prepare("
+    SELECT t.nom, t.description FROM trophees t
+    JOIN progression_utilisateur p ON t.id = p.id_trophee
+    WHERE p.id_utilisateur = ?
+    ORDER BY RAND() LIMIT 20
+");
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -57,7 +56,7 @@ $conn->close();
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Mon Profil - Speedrun Trophée</title>
+    <title>Profil - Speedrun Trophée</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="../backend/styles.css">
 </head>
@@ -65,76 +64,42 @@ $conn->close();
 
 <?php include 'header.php'; ?>
 
-<main class="container mt-4">
-    <section>
-        <h2 class="mb-4">👤 Bienvenue <?= htmlspecialchars($username) ?></h2>
+<main class="container mt-4 text-white">
+    <h2 class="mb-4">👤 Profil de <?= htmlspecialchars($username) ?></h2>
 
-        <div class="mb-5">
-            <h4 class="mb-3">🎮 10 jeux sélectionnés</h4>
-            <div class="row" id="games-container"></div>
-        </div>
+    <h4>🎮 10 Jeux aléatoires</h4>
+    <div class="row">
+        <?php foreach ($jeux as $jeu): ?>
+            <div class="col-md-4 mb-3">
+                <div class="card bg-dark text-white shadow">
+                    <div class="card-body">
+                        <h5 class="card-title"><?= htmlspecialchars($jeu) ?></h5>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+        <?php if (empty($jeux)): ?>
+            <p class="text-warning">Aucun jeu détecté.</p>
+        <?php endif; ?>
+    </div>
 
-        <div>
-            <h4 class="mb-3">🏆 20 trophées débloqués</h4>
-            <div class="row" id="trophies-container"></div>
-        </div>
-    </section>
+    <h4 class="mt-5">🏆 20 Trophées obtenus</h4>
+    <div class="row">
+        <?php foreach ($trophees as $t): ?>
+            <div class="col-md-6 mb-3">
+                <div class="card bg-secondary text-white shadow">
+                    <div class="card-body">
+                        <h5 class="card-title"><?= htmlspecialchars($t['nom']) ?></h5>
+                        <p class="card-text"><?= htmlspecialchars($t['description']) ?: 'Pas de description.' ?></p>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+        <?php if (empty($trophees)): ?>
+            <p class="text-warning">Aucun trophée trouvé.</p>
+        <?php endif; ?>
+    </div>
 </main>
-
-<footer class="bg-dark text-white text-center py-3">
-    <p>&copy; 2025 Speedrun Trophée - Tous droits réservés</p>
-</footer>
-
-<script>
-    // Données injectées depuis PHP
-    const allGames = <?= json_encode($jeux) ?>;
-    const allTrophies = <?= json_encode($trophees) ?>;
-
-    function shuffle(array) {
-        return array.sort(() => Math.random() - 0.5);
-    }
-
-    function renderCards(items, containerId, type) {
-        const container = document.getElementById(containerId);
-        container.innerHTML = '';
-
-        items.forEach(item => {
-            const col = document.createElement('div');
-            col.className = 'col-md-4 mb-3';
-
-            const card = document.createElement('div');
-            card.className = 'card bg-dark text-white h-100 shadow';
-
-            const cardBody = document.createElement('div');
-            cardBody.className = 'card-body';
-
-            const title = document.createElement('h5');
-            title.className = 'card-title';
-            title.innerText = type === 'game' ? item : item.nom;
-
-            cardBody.appendChild(title);
-
-            if (type === 'trophy') {
-                const desc = document.createElement('p');
-                desc.className = 'card-text';
-                desc.innerText = item.description || 'Sans description';
-                cardBody.appendChild(desc);
-            }
-
-            card.appendChild(cardBody);
-            col.appendChild(card);
-            container.appendChild(col);
-        });
-    }
-
-    // Sélection aléatoire et affichage
-    document.addEventListener('DOMContentLoaded', () => {
-        const randomGames = shuffle(allGames).slice(0, 10);
-        const randomTrophies = shuffle(allTrophies).slice(0, 20);
-        renderCards(randomGames, 'games-container', 'game');
-        renderCards(randomTrophies, 'trophies-container', 'trophy');
-    });
-</script>
 
 </body>
 </html>
