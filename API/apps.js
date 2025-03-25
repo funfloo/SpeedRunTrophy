@@ -1,3 +1,4 @@
+// apps.js
 const express = require('express');
 const sequelize = require('./connection');
 const { DataTypes } = require('sequelize');
@@ -33,7 +34,7 @@ const User = sequelize.define('User', {
   },
 }, {
   tableName: 'users',
-  timestamps: false, // Pas de colonnes createdAt/updatedAt
+  timestamps: false,
 });
 
 // Définition du modèle Game (table 'games')
@@ -52,7 +53,7 @@ const Game = sequelize.define('Game', {
   timestamps: false,
 });
 
-// Définition du modèle Trophy (table 'trophies')
+// Définition du modèle Trophy (table 'trophees')
 const Trophy = sequelize.define('Trophy', {
   id: { 
     type: DataTypes.INTEGER, 
@@ -68,30 +69,18 @@ const Trophy = sequelize.define('Trophy', {
     allowNull: false 
   },
 }, {
-  tableName: 'trophies',
+  tableName: 'trophees',
   timestamps: false,
 });
 
-// Associations between Trophy and Game
-Trophy.belongsTo(Game, { 
-  foreignKey: 'game_id', 
-  onDelete: 'CASCADE', 
-  onUpdate: 'CASCADE' 
-});
-Game.hasMany(Trophy, { 
-  foreignKey: 'game_id', 
-  onDelete: 'CASCADE', 
-  onUpdate: 'CASCADE' 
-});
-
-// Définition du modèle UserTrophy (table 'user_trophy')
+// Définition du modèle UserTrophy (table 'user_trophees')
 const UserTrophy = sequelize.define('UserTrophy', {
   user_id: { 
     type: DataTypes.INTEGER, 
     primaryKey: true, 
     allowNull: false 
   },
-  trophy_id: { 
+  trophee_id: { 
     type: DataTypes.INTEGER, 
     primaryKey: true, 
     allowNull: false 
@@ -101,7 +90,7 @@ const UserTrophy = sequelize.define('UserTrophy', {
     allowNull: true 
   },
 }, {
-  tableName: 'user_trophy',
+  tableName: 'user_trophees',
   timestamps: false,
 });
 
@@ -109,11 +98,11 @@ const UserTrophy = sequelize.define('UserTrophy', {
 User.belongsToMany(Trophy, { 
   through: UserTrophy, 
   foreignKey: 'user_id', 
-  otherKey: 'trophy_id'
+  otherKey: 'trophee_id'
 });
 Trophy.belongsToMany(User, { 
   through: UserTrophy, 
-  foreignKey: 'trophy_id', 
+  foreignKey: 'trophee_id', 
   otherKey: 'user_id'
 });
 

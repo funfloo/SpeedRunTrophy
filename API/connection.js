@@ -1,10 +1,10 @@
 // connection.js
 const { Sequelize } = require('sequelize');
 
-// Crée et exporte l'instance Sequelize pour se connecter à la base de données
-const sequelize = new Sequelize('SpeedRunTrophy', 'root', 'root', {
+// Connexion à la base de données "speedrun_trophees"
+const sequelize = new Sequelize('speedrun_trophees', 'root', 'root', {
   host: 'localhost',
-  port: 8889, // Adapté selon ta configuration (ex: MAMP utilise souvent le port 8889)
+  port: 8889, // Adapter si besoin
   dialect: 'mysql',
   logging: false,
 });
