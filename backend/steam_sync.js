@@ -11,7 +11,7 @@ const DB_CONFIG = {
 
 // 🔹 Clé API Steam
 const API_KEY = "9B79456AE2422A57C047F6FAD331C21B";
-const STEAM_ID = "76561198259394691";
+const STEAM_ID = "76561198159440219";
 
 // 🔹 Récupère le nom Steam
 async function fetchSteamUsername(steamId) {
