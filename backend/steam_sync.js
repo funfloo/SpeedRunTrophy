@@ -1,7 +1,6 @@
 const axios = require('axios');
 const mysql = require('mysql2/promise');
 
-// 🔹 Configuration MySQL
 const DB_CONFIG = {
     host: 'localhost',
     user: 'root',
@@ -9,18 +8,63 @@ const DB_CONFIG = {
     database: 'speedrun_trophees'
 };
 
-// 🔹 Clé API Steam
 const API_KEY = "9B79456AE2422A57C047F6FAD331C21B";
 const STEAM_ID = "76561198159440219";
 
-// 🔹 Récupère le nom Steam
+// 🔹 Obtenir le nom Steam
 async function fetchSteamUsername(steamId) {
     const url = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${API_KEY}&steamids=${steamId}`;
     const { data } = await axios.get(url);
     return data.response.players[0]?.personaname || null;
 }
 
-// 🔹 Crée ou récupère l'utilisateur
+// 🔹 Obtenir le genre/type du jeu depuis le store Steam
+async function fetchGameType(appid) {
+    try {
+        const url = `https://store.steampowered.com/api/appdetails?appids=${appid}&l=french`;
+        const { data } = await axios.get(url);
+        const gameData = data[appid];
+
+        if (gameData?.success && gameData.data?.genres) {
+            return gameData.data.genres.map(g => g.description).join(', ');
+        }
+    } catch (err) {
+        console.warn(`❌ Type non récupéré pour appid ${appid}`);
+    }
+    return null;
+}
+
+// 🔹 Obtenir la rareté globale des trophées (en %)
+async function fetchGlobalAchievementRates(appid) {
+    try {
+        const url = `https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/?gameid=${appid}`;
+        const { data } = await axios.get(url);
+        const rates = {};
+
+        if (data?.achievementpercentages?.achievements) {
+            for (const a of data.achievementpercentages.achievements) {
+                rates[a.name] = parseFloat(a.percent);
+            }
+        }
+        return rates;
+    } catch (err) {
+        console.warn(`❌ Rareté non récupérée pour appid ${appid}`);
+        return {};
+    }
+}
+
+// 🔹 Obtenir les succès débloqués par l'utilisateur
+async function fetchAchievements(steamId, appid) {
+    try {
+        const url = `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key=${API_KEY}&steamid=${steamId}&appid=${appid}`;
+        const { data } = await axios.get(url);
+        return data.playerstats?.achievements || [];
+    } catch (err) {
+        return [];
+    }
+}
+
+// 🔹 Vérifier ou créer l'utilisateur en base
 async function getOrCreateUser(db, steamId) {
     const [rows] = await db.query("SELECT id FROM utilisateurs WHERE steam_id = ?", [steamId]);
     if (rows.length) return rows[0].id;
@@ -28,89 +72,67 @@ async function getOrCreateUser(db, steamId) {
     const username = await fetchSteamUsername(steamId);
     if (!username) return null;
 
-    const [result] = await db.query(
+    const [res] = await db.query(
         "INSERT INTO utilisateurs (nom_utilisateur, email, mot_de_passe, steam_id) VALUES (?, ?, '', ?)",
         [username, `${steamId}@steam.com`, steamId]
     );
-    console.log(`👤 Utilisateur ajouté : ${username}`);
-    return result.insertId;
+    return res.insertId;
 }
 
-// 🔹 Récupère les jeux Steam
-async function fetchGames(steamId) {
-    const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${API_KEY}&steamid=${steamId}&include_appinfo=true`;
-    const { data } = await axios.get(url);
-    return data.response.games || [];
-}
-
-// 🔹 Récupère les succès d'un jeu
-async function fetchAchievements(steamId, appid) {
-    try {
-        const url = `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key=${API_KEY}&steamid=${steamId}&appid=${appid}`;
-        const { data } = await axios.get(url);
-        return data.playerstats?.achievements || [];
-    } catch (err) {
-        console.warn(`⚠️ Aucun succès récupéré pour appid ${appid}`);
-        return [];
-    }
-}
-
-// 🔹 Script principal
+// 🔹 Synchronisation principale
 async function syncSteamData(steamId) {
     const db = await mysql.createConnection(DB_CONFIG);
-    console.log(`🔄 Synchronisation Steam pour ${steamId}`);
+    console.log(`🔄 Début synchronisation Steam pour ${steamId}...`);
 
     const userId = await getOrCreateUser(db, steamId);
-    if (!userId) {
-        console.error("❌ Utilisateur introuvable.");
-        return;
-    }
+    if (!userId) return console.error("❌ Utilisateur introuvable");
 
     const games = await fetchGames(steamId);
-    if (!games.length) {
-        console.warn("⚠️ Aucun jeu trouvé.");
-        return;
-    }
+    if (!games.length) return console.warn("⚠️ Aucun jeu trouvé");
 
     for (const game of games) {
-        console.log(`🎮 Jeu détecté : ${game.name}`);
+        console.log(`🎮 ${game.name}`);
 
-        // ➤ Ajout du jeu
+        const type = await fetchGameType(game.appid);
+
         await db.query(
-            "INSERT INTO jeux (steam_appid, nom) VALUES (?, ?) ON DUPLICATE KEY UPDATE nom = VALUES(nom)",
-            [game.appid, game.name]
+            `INSERT INTO jeux (steam_appid, nom, type)
+             VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE nom = VALUES(nom), type = VALUES(type)`,
+            [game.appid, game.name, type]
         );
 
-        // ➤ Récupère l'id interne du jeu
         const [jeuRow] = await db.query("SELECT id FROM jeux WHERE steam_appid = ?", [game.appid]);
-        if (!jeuRow.length) continue;
-        const gameId = jeuRow[0].id;
+        const gameId = jeuRow[0]?.id;
+        if (!gameId) continue;
 
-        // ➤ Récupère les succès Steam
+        const rarityMap = await fetchGlobalAchievementRates(game.appid);
         const achievements = await fetchAchievements(steamId, game.appid);
-        if (!achievements.length) continue;
 
         for (const ach of achievements) {
             if (!ach.achieved) continue;
 
-            // ➤ Ajout du trophée
+            const rarete = rarityMap[ach.apiname] !== undefined
+                ? parseFloat(rarityMap[ach.apiname])
+                : null;
+
+            // Ajout trophée
             await db.query(
                 `INSERT INTO trophees (id_jeu, api_name, nom, description, rarete)
-                 VALUES (?, ?, ?, ?, NULL)
-                 ON DUPLICATE KEY UPDATE nom = VALUES(nom), description = VALUES(description)`,
-                [gameId, ach.apiname, ach.apiname, ach.description || ""]
+                 VALUES (?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE nom = VALUES(nom), description = VALUES(description), rarete = VALUES(rarete)`,
+                [gameId, ach.apiname, ach.apiname, ach.description || '', rarete]
             );
 
-            // ➤ Récupère l'id du trophée
+            // Récupération de l’ID du trophée
             const [trophyRow] = await db.query(
                 "SELECT id FROM trophees WHERE api_name = ? AND id_jeu = ?",
                 [ach.apiname, gameId]
             );
 
-            if (!trophyRow.length) continue;
-            const trophyId = trophyRow[0].id;
+            const trophyId = trophyRow[0]?.id;
+            if (!trophyId) continue;
 
-            // ➤ Ajout de la progression utilisateur
+            // Ajout progression
             await db.query(
                 `INSERT INTO progression_utilisateur (id_utilisateur, id_trophee, id_jeu, date_obtention)
                  VALUES (?, ?, ?, NOW())
@@ -118,12 +140,19 @@ async function syncSteamData(steamId) {
                 [userId, trophyId, gameId]
             );
 
-            console.log(`🏆 Trophée débloqué : ${ach.apiname}`);
+            console.log(`🏆 ${ach.apiname} - ${rarete !== null ? rarete.toFixed(2) + '%' : 'N/A'}`);
         }
     }
 
     await db.end();
     console.log("✅ Synchronisation terminée !");
+}
+
+// 🔥 Start
+async function fetchGames(steamId) {
+    const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${API_KEY}&steamid=${steamId}&include_appinfo=true`;
+    const { data } = await axios.get(url);
+    return data.response.games || [];
 }
 
 syncSteamData(STEAM_ID);
