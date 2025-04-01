@@ -3,7 +3,7 @@ session_start();
 require 'config.php';
 
 if (!isset($_SESSION['steam_id'])) {
-    header("Location: connexion.php");
+    header('Location: connexion.php');
     exit();
 }
 ?>
@@ -12,7 +12,7 @@ if (!isset($_SESSION['steam_id'])) {
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Récompenses</title>
+    <title>Récompenses - Speedrun Trophée</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="../backend/styles.css">
 </head>
@@ -20,16 +20,17 @@ if (!isset($_SESSION['steam_id'])) {
 
 <?php include 'header.php'; ?>
 
-<main class="container mt-4">
-    <div class="card bg-dark text-white shadow p-4">
+<main class="container mt-5">
+    <section class="text-white">
         <h2>🎁 Vos Récompenses</h2>
-        <p>Accumulez des points pour obtenir des récompenses exclusives :</p>
-        <ul>
-            <li><strong>🥉 Bronze:</strong> 100 points - Badge de Bronze</li>
-            <li><strong>🥈 Argent:</strong> 500 points - Badge d'Argent</li>
-            <li><strong>🥇 Or:</strong> 1000 points - Badge d'Or</li>
+        <p>Accumulez des points pour débloquer les badges ci-dessous :</p>
+
+        <ul class="list-group">
+            <li class="list-group-item">🥉 <strong>Bronze</strong> : 100 points</li>
+            <li class="list-group-item">🥈 <strong>Argent</strong> : 500 points</li>
+            <li class="list-group-item">🥇 <strong>Or</strong> : 1000 points</li>
         </ul>
-    </div>
+    </section>
 </main>
 
 </body>

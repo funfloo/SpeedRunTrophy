@@ -2,15 +2,16 @@
 session_start();
 require 'config.php';
 
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+// Connexion à la base de données
 $result = $conn->query("
     SELECT u.nom_utilisateur, COUNT(p.id_trophee) AS nb_trophees
     FROM utilisateurs u
-    LEFT JOIN progression_utilisateur p ON u.id = p.id_utilisateur
+    LEFT JOIN progression_utilisateur p ON u.id = p.utilisateur_id
     GROUP BY u.id
     ORDER BY nb_trophees DESC
     LIMIT 20
 ");
+
 $classement = $result->fetch_all(MYSQLI_ASSOC);
 $conn->close();
 
@@ -24,35 +25,14 @@ $reste = array_slice($classement, 3);
     <meta charset="UTF-8">
     <title>Classement</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="../backend/styles.css">
-    <style>
-        .podium {
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            height: 300px;
-            margin-bottom: 40px;
-        }
-        .podium div {
-            text-align: center;
-            width: 100px;
-            margin: 0 15px;
-            background-color: #343a40;
-            color: white;
-            border-radius: 10px;
-            padding-top: 10px;
-        }
-        .first { height: 150px; }
-        .second { height: 110px; }
-        .third { height: 90px; }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <?php include 'header.php'; ?>
 
-<main class="container mt-4 text-white">
-    <h2 class="mb-4">🏆 Podium</h2>
+<main class="container mt-4">
+    <h2>🏆 Podium</h2>
 
     <div class="podium">
         <div class="second">

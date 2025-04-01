@@ -1,30 +1,30 @@
 <?php
 session_start();
-require 'config.php';
+require_once '../vendor/autoload.php'; // Assurez-vous que ce chemin est correct
 
-// Simulation du retour Steam, suppose que $steamId a été récupéré
-$steamId = $_SESSION['steam_id'] ?? null;
+use LightOpenID;
 
-if (!$steamId) {
-    header("Location: connexion.php");
+$openid = new LightOpenID('http://localhost/steam_callback.php'); // L'URL de votre callback
+
+if (!$openid->mode) {
+    // Démarrer le processus de connexion
+    $openid->identity = 'http://steamcommunity.com/openid';
+    header('Location: ' . $openid->authUrl());
     exit();
+} elseif ($openid->mode == 'cancel') {
+    echo 'Connexion annulée.';
+} else {
+    // Si l'utilisateur est connecté
+    if ($openid->validate()) {
+        $steamId = str_replace('https://steamcommunity.com/openid/id/', '', $openid->identity);
+        $_SESSION['steam_id'] = $steamId;
+        $_SESSION['username'] = 'Utilisateur Steam'; // Vous pouvez ici récupérer d'autres infos utilisateur via Steam API
+
+        // Rediriger vers la page de profil après la connexion
+        header('Location: profile.php');
+        exit();
+    } else {
+        echo 'Connexion échouée.';
+    }
 }
-
-// Connexion BDD
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-
-// Récupère nom utilisateur Steam dans la BDD
-$stmt = $conn->prepare("SELECT nom_utilisateur FROM utilisateurs WHERE steam_id = ?");
-$stmt->bind_param("s", $steamId);
-$stmt->execute();
-$stmt->bind_result($username);
-$stmt->fetch();
-$stmt->close();
-$conn->close();
-
-// Stocke dans la session
-$_SESSION['username'] = $username;
-
-// Redirige vers index ou profil
-header("Location: index.php");
-exit();
+?>
