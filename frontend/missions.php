@@ -3,7 +3,6 @@ session_start();
 require 'config.php';
 
 if (!isset($_SESSION['steam_id'])) {
-    // L'utilisateur n'est pas connecté
     echo "<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Missions</title>
           <link rel='stylesheet' href='../backend/styles.css'>
           <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css'></head><body>";
@@ -13,9 +12,7 @@ if (!isset($_SESSION['steam_id'])) {
     exit();
 }
 
-// 🔐 Utilisateur connecté : on charge ses trophées
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-
 $stmt = $conn->prepare("SELECT id FROM utilisateurs WHERE steam_id = ?");
 $stmt->bind_param("s", $_SESSION['steam_id']);
 $stmt->execute();
@@ -44,17 +41,59 @@ $conn->close();
     <title>Missions - Speedrun Trophée</title>
     <link rel="stylesheet" href="../backend/styles.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .defi-card {
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .defi-jour {
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+        }
+
+        .defi-semaine {
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+        }
+
+        .defi-mois {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+        }
+
+        .badge-custom {
+            background-color: rgba(255,255,255,0.15);
+            font-size: 0.9rem;
+            padding: 6px 12px;
+            border-radius: 8px;
+        }
+
+        .defi-header {
+            font-size: 1.6rem;
+            font-weight: bold;
+        }
+
+        .btn-refresh {
+            background-color: #ffffff22;
+            color: white;
+            border: 1px solid #fff;
+        }
+
+        .btn-refresh:hover {
+            background-color: #ffffff33;
+        }
+    </style>
 </head>
 <body>
 
 <?php include 'header.php'; ?>
 
 <main class="container mt-4">
-    <h2 class="mb-4 text-white">🎯 Vos Missions</h2>
+    <h2 class="text-white mb-4">🔥 Vos Missions</h2>
 
     <div id="defi-jour"></div>
-    <div class="text-right mb-4">
-        <button onclick="changerDefiJour()" class="btn btn-outline-warning btn-sm">🔁 Changer le défi du jour</button>
+    <div class="text-right mb-5">
+        <button onclick="changerDefiJour()" class="btn btn-refresh btn-sm">🔁 Changer le défi du jour</button>
     </div>
 
     <div id="defi-semaine"></div>
@@ -72,7 +111,7 @@ function shuffle(arr) {
     return arr.sort(() => Math.random() - 0.5);
 }
 
-function renderDefi(title, trophy, containerId) {
+function renderDefi(title, trophy, containerId, className) {
     const container = document.getElementById(containerId);
     if (!trophy) {
         container.innerHTML = `<div class="alert alert-warning">Aucun trophée disponible pour ${title}</div>`;
@@ -80,14 +119,12 @@ function renderDefi(title, trophy, containerId) {
     }
 
     container.innerHTML = `
-        <div class="card bg-dark text-white shadow mb-4">
-            <div class="card-body">
-                <h5 class="card-title">${title}</h5>
-                <h6 class="card-subtitle mb-2">🏆 ${trophy.nom}</h6>
-                <p class="card-text">${trophy.description || "Pas de description disponible."}</p>
-                <p class="card-text"><strong>🎮 Jeu :</strong> ${trophy.jeu}</p>
-                <span class="badge badge-info">Rareté : ${parseFloat(trophy.rarete).toFixed(2)}%</span>
-            </div>
+        <div class="defi-card ${className} shadow">
+            <div class="defi-header mb-2">${title}</div>
+            <h5>🏆 ${trophy.nom}</h5>
+            <p class="mb-1">${trophy.description || "Pas de description disponible."}</p>
+            <p>🎮 <strong>${trophy.jeu}</strong></p>
+            <span class="badge-custom">Rareté : ${parseFloat(trophy.rarete).toFixed(2)}%</span>
         </div>
     `;
 }
@@ -95,7 +132,7 @@ function renderDefi(title, trophy, containerId) {
 function genererDefisSelonRarete() {
     const now = new Date();
 
-    // 🔹 Défi du jour (rareté > 80%)
+    // 🔹 JOUR (> 80%)
     const dateJour = localStorage.getItem('date_jour');
     const savedJour = localStorage.getItem('defi_jour');
     const jourExp = new Date(dateJour);
@@ -105,9 +142,9 @@ function genererDefisSelonRarete() {
         localStorage.setItem('defi_jour', JSON.stringify(nouveau));
         localStorage.setItem('date_jour', now.toDateString());
     }
-    renderDefi("🎯 Défi du jour", JSON.parse(localStorage.getItem('defi_jour')), "defi-jour");
+    renderDefi("🎯 Défi du jour", JSON.parse(localStorage.getItem('defi_jour')), "defi-jour", "defi-jour");
 
-    // 🔹 Défi de la semaine (25% à 40%)
+    // 🔹 SEMAINE (25% à 40%)
     const dateSemaine = new Date(localStorage.getItem('date_semaine') || '');
     const diffSemaine = (now - dateSemaine) / (1000 * 3600 * 24);
     const savedSemaine = localStorage.getItem('defi_semaine');
@@ -117,9 +154,9 @@ function genererDefisSelonRarete() {
         localStorage.setItem('defi_semaine', JSON.stringify(nouveau));
         localStorage.setItem('date_semaine', now.toISOString());
     }
-    renderDefi("📅 Défi de la semaine", JSON.parse(localStorage.getItem('defi_semaine')), "defi-semaine");
+    renderDefi("📅 Défi de la semaine", JSON.parse(localStorage.getItem('defi_semaine')), "defi-semaine", "defi-semaine");
 
-    // 🔹 Défi du mois (< 5%)
+    // 🔹 MOIS (< 5%)
     const dateMois = new Date(localStorage.getItem('date_mois') || '');
     const isNewMonth = now.getMonth() !== dateMois.getMonth() || now.getFullYear() !== dateMois.getFullYear();
     const savedMois = localStorage.getItem('defi_mois');
@@ -129,14 +166,14 @@ function genererDefisSelonRarete() {
         localStorage.setItem('defi_mois', JSON.stringify(nouveau));
         localStorage.setItem('date_mois', now.toISOString());
     }
-    renderDefi("🏆 Défi du mois", JSON.parse(localStorage.getItem('defi_mois')), "defi-mois");
+    renderDefi("🏆 Défi du mois", JSON.parse(localStorage.getItem('defi_mois')), "defi-mois", "defi-mois");
 }
 
 function changerDefiJour() {
     const nouveau = shuffle(allTrophies.filter(t => parseFloat(t.rarete) > 80))[0];
     localStorage.setItem('defi_jour', JSON.stringify(nouveau));
     localStorage.setItem('date_jour', new Date().toDateString());
-    renderDefi("🎯 Défi du jour", nouveau, "defi-jour");
+    renderDefi("🎯 Défi du jour", nouveau, "defi-jour", "defi-jour");
 }
 
 document.addEventListener('DOMContentLoaded', genererDefisSelonRarete);

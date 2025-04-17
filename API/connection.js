@@ -1,11 +1,9 @@
-// connection.js
 const { Sequelize } = require('sequelize');
 
-// Connexion à la base de données "speedrun_trophees"
-const sequelize = new Sequelize('speedrun_trophees', 'root', 'root', {
+const sequelize = new Sequelize('speedrun_trophees', 'root', '', {
   host: 'localhost',
-  port: 8889, // Adapter si besoin
   dialect: 'mysql',
+  port: 3306, // par défaut sur XAMPP
   logging: false,
 });
 
