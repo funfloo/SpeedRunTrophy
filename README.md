@@ -78,9 +78,9 @@ const API_KEY = "VOTRE_CLE_API_STEAM";
 
 ---
 
-## 🚀 Branchement alternatif : `site_node.js` (Version full Node.js + Steam)
+## 🚀 Branchement alternatif : `site_nodejs` (Version full Node.js + Steam)
 
-Sur la branche nodejs, Le projet est disponible avec une architecture 100% Node.js pour la partie connexion.
+Sur la branche site_nodejs, Le projet est disponible avec une architecture 100% Node.js pour la partie connexion.
 
 ### 📦 Fonctionnalités :
 
